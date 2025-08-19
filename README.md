@@ -1,2 +1,2 @@
 # BharatVote
-A blockchain-powered voting platform for secure, fair, and verifiable elections in India
+Blockchain-Based Decentralized Election Systems: Enhancing Transparency and Trust in Digital Democracies

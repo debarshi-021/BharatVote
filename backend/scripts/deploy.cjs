@@ -2,8 +2,14 @@
 const hre = require("hardhat");
 
 async function main() {
-  const electionName = "Student Council Election";
-  const candidates = ["Alice", "Bob", "Charlie"];
+  const electionName = "Lok Sabha Election 2024";
+  const candidates = [
+    "Narendra Modi",
+    "Rahul Gandhi",
+    "Arvind Kejriwal",
+    "Mamata Banerjee",
+    "Nitish Kumar",
+  ];
 
   const BharatVote = await hre.ethers.getContractFactory("BharatVote");
   const contract = await BharatVote.deploy(electionName, candidates);

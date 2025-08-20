@@ -1,5 +1,5 @@
-import { ethers } from 'ethers';
-import { getContract } from 'wagmi/actions';
+import { readContract, writeContract } from '@wagmi/core';
+import { config } from './config';
 
 // Contract configuration
 export const CONTRACT_ADDRESS = '0x9cA5179B5f5023e09E6646584A3b029CE284a455';
@@ -71,11 +71,13 @@ export interface Candidate {
 // Contract interaction functions
 export async function getCandidates(): Promise<Candidate[]> {
   try {
-    const provider = new ethers.JsonRpcProvider('https://rpc-amoy.polygon.technology');
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-    const candidates = await contract.getAllCandidates();
+    const candidates = await readContract(config, {
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'getAllCandidates',
+    });
     
-    return candidates.map((candidate: any) => ({
+    return (candidates as any[]).map((candidate: any) => ({
       name: candidate.name,
       voteCount: Number(candidate.voteCount)
     }));
@@ -85,22 +87,30 @@ export async function getCandidates(): Promise<Candidate[]> {
   }
 }
 
-export async function voteForCandidate(candidateIndex: number, signer: ethers.Signer): Promise<string> {
+export async function voteForCandidate(candidateIndex: number, signer: any): Promise<string> {
   try {
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    const tx = await contract.vote(candidateIndex);
-    await tx.wait();
-    return tx.hash;
+    const hash = await writeContract(config, {
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'vote',
+      args: [candidateIndex],
+    });
+    return hash;
   } catch (error) {
     console.error('Error voting:', error);
     throw error;
   }
 }
 
-export async function checkIfVoted(address: string, provider: ethers.Provider): Promise<boolean> {
+export async function checkIfVoted(address: string, provider: any): Promise<boolean> {
   try {
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-    return await contract.voters(address);
+    const hasVoted = await readContract(config, {
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'voters',
+      args: [address],
+    });
+    return hasVoted as boolean;
   } catch (error) {
     console.error('Error checking vote status:', error);
     throw error;
@@ -109,9 +119,12 @@ export async function checkIfVoted(address: string, provider: ethers.Provider): 
 
 export async function getElectionName(): Promise<string> {
   try {
-    const provider = new ethers.JsonRpcProvider('https://rpc-amoy.polygon.technology');
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-    return await contract.electionName();
+    const electionName = await readContract(config, {
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'electionName',
+    });
+    return electionName as string;
   } catch (error) {
     console.error('Error fetching election name:', error);
     throw error;

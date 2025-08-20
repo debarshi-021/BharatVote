@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useSigner, useProvider } from 'wagmi';
-import { ethers } from 'ethers';
+import { useAccount } from 'wagmi';
 import { 
   getCandidates, 
   voteForCandidate, 
@@ -11,8 +10,6 @@ import {
 
 export function useBharatVote() {
   const { address, isConnected } = useAccount();
-  const { data: signer } = useSigner();
-  const provider = useProvider();
   
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [electionName, setElectionName] = useState<string>('');
@@ -27,7 +24,7 @@ export function useBharatVote() {
       const [candidatesData, electionNameData, votedStatus] = await Promise.all([
         getCandidates(),
         getElectionName(),
-        address ? checkIfVoted(address, provider) : Promise.resolve(false)
+        address ? checkIfVoted(address, undefined) : Promise.resolve(false)
       ]);
       
       setCandidates(candidatesData);
@@ -42,13 +39,13 @@ export function useBharatVote() {
 
   // Vote for a candidate
   const vote = async (candidateIndex: number) => {
-    if (!signer || !address) {
+    if (!isConnected || !address) {
       throw new Error('Wallet not connected');
     }
 
     try {
       setVoting(true);
-      const txHash = await voteForCandidate(candidateIndex, signer);
+      const txHash = await voteForCandidate(candidateIndex, undefined);
       
       // Refresh data after voting
       await fetchData();

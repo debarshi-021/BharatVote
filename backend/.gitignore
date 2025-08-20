@@ -1,0 +1,7 @@
+# Sensitive data
+.env
+node_modules/
+# Hardhat build artifacts
+artifacts/
+cache/
+typechain/

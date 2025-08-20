@@ -1,24 +1,13 @@
-import { configureChains, createConfig } from 'wagmi';
-import { polygonAmoy } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
-import { getDefaultWallets } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { polygonAmoy } from "wagmi/chains";
 
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [polygonAmoy],
-  [publicProvider()]
-);
+const chains = [polygonAmoy] as const;
 
-const { connectors } = getDefaultWallets({
-  appName: 'BharatVote',
-  projectId: '2c0dca4142539a3083baf970fa503a92',
-  chains,
-});
-
-export const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
+export const wagmiConfig = getDefaultConfig({
+  appName: "BharatVote",
+  projectId: "2c0dca4142539a3083baf970fa503a92",
+  chains: chains,
+  ssr: true, // For Next.js App Router
 });
 
 export { chains };

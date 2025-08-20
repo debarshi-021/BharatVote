@@ -1,13 +1,14 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { polygonAmoy } from "wagmi/chains";
+import { http, createConfig } from 'wagmi';
+import { polygonAmoy } from 'wagmi/chains';
+import { injected } from 'wagmi/connectors';
 
-const chains = [polygonAmoy] as const;
-
-export const wagmiConfig = getDefaultConfig({
-  appName: "BharatVote",
-  projectId: "2c0dca4142539a3083baf970fa503a92",
-  chains: chains,
-  ssr: true, // For Next.js App Router
+export const config = createConfig({
+  chains: [polygonAmoy],
+  connectors: [injected()],
+  ssr: true,
+  transports: {
+    [polygonAmoy.id]: http(),
+  },
 });
 
-export { chains };
+export const contractAddress = '0x9cA5179B5f5023e09E6646584A3b029CE284a455';

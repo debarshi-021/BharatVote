@@ -1,40 +1,23 @@
-/**
- * CandidateList Component
- * Renders a responsive grid of candidate cards
- */
+"use client";
 
+import { useBharatVote } from '@/hooks/useBharatVote';
 import CandidateCard from "./CandidateCard";
-import { Candidate } from "@/lib/contract-interactions";
+import { Candidate } from '@/lib/types';
 
-interface CandidateWithId extends Candidate {
-  id: number;
-}
+export default function CandidateList() {
+  const { candidates } = useBharatVote();
 
-interface CandidateListProps {
-  candidates: CandidateWithId[];
-  onVote: (candidateId: number) => void;
-  walletConnected: boolean;
-  hasVoted: boolean;
-  voting: boolean;
-}
+  if (!candidates) {
+    return <div>Loading candidates...</div>;
+  }
 
-export default function CandidateList({
-  candidates,
-  onVote,
-  walletConnected,
-  hasVoted,
-  voting,
-}: CandidateListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {candidates.map((candidate) => (
+      {candidates.map((candidate: Candidate, index: number) => (
         <CandidateCard
-          key={candidate.id}
+          key={index}
           candidate={candidate}
-          onVote={onVote}
-          walletConnected={walletConnected}
-          hasVoted={hasVoted}
-          voting={voting}
+          id={index}
         />
       ))}
     </div>

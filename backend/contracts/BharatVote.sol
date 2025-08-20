@@ -26,6 +26,17 @@ contract BharatVote {
     // address => boolean (true if voted, false otherwise).
     mapping(address => bool) public voters;
 
+    // The address of the contract administrator.
+    address public admin;
+
+    /**
+     * @dev Modifier to restrict function access to the admin only.
+     */
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only the admin can perform this action.");
+        _;
+    }
+
     /**
      * @dev The constructor initializes the smart contract with the election name
      * and a list of candidate names.
@@ -38,6 +49,7 @@ contract BharatVote {
         string[] memory _candidateParties,
         string[] memory _candidateLogoUrls
     ) {
+        admin = msg.sender;
         electionName = _electionName;
         // Loop through the provided candidate names and add them to the candidates array.
         for (uint256 i = 0; i < _candidateNames.length; i++) {
@@ -73,5 +85,20 @@ contract BharatVote {
      */
     function getAllCandidates() public view returns (Candidate[] memory) {
         return candidates;
+    }
+
+    /**
+     * @dev Allows the admin to add a new candidate.
+     * @param _name The name of the new candidate.
+     * @param _party The party of the new candidate.
+     * @param _logoUrl The URL of the new candidate's logo.
+     */
+    function addCandidate(string memory _name, string memory _party, string memory _logoUrl) public onlyAdmin {
+        candidates.push(Candidate({
+            name: _name,
+            party: _party,
+            logoUrl: _logoUrl,
+            voteCount: 0
+        }));
     }
 }

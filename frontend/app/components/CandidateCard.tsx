@@ -1,36 +1,31 @@
-"use client"
+"use client";
 
-/**
- * CandidateCard Component
- * Displays individual candidate information with voting functionality
- */
+import { useBharatVote } from '@/hooks/useBharatVote';
 
-import { Candidate } from "@/lib/contract-interactions";
+// Define a mapping from candidate names to their party and logo
+const candidateInfo: { [key: string]: { party: string; logoUrl: string } } = {
+  'Narendra Modi': { party: 'Bharatiya Janata Party', logoUrl: '/bjp-logo.png' },
+  'Rahul Gandhi': { party: 'Indian National Congress', logoUrl: '/indian-national-congress-logo.png' },
+  'Arvind Kejriwal': { party: 'Aam Aadmi Party', logoUrl: '/aap-party-logo.png' },
+  'Independent': { party: 'Independent', logoUrl: '/independent-candidate-symbol.png' },
+};
 
-interface CandidateWithId extends Candidate {
+import { Candidate } from '@/lib/types';
+
+interface CandidateCardProps {
+  candidate: Candidate;
   id: number;
 }
 
-interface CandidateCardProps {
-  candidate: CandidateWithId;
-  onVote: (candidateId: number) => void;
-  walletConnected: boolean;
-  hasVoted: boolean;
-  voting: boolean;
-}
+export default function CandidateCard({ candidate, id }: CandidateCardProps) {
+  const { castVote, isConnected } = useBharatVote();
+  const info = candidateInfo[candidate.name] || { party: 'Unknown', logoUrl: '/placeholder-logo.png' };
 
-export default function CandidateCard({
-  candidate,
-  onVote,
-  walletConnected,
-  hasVoted,
-  voting,
-}: CandidateCardProps) {
   return (
     <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border border-border">
       <div className="flex items-center mb-4">
         <img
-          src={`/${candidate.logoUrl}`}
+          src={info.logoUrl}
           alt={`${candidate.name} logo`}
           className="w-12 h-12 mr-4"
         />
@@ -38,7 +33,7 @@ export default function CandidateCard({
           <h3 className="text-xl font-semibold text-card-foreground">
             {candidate.name}
           </h3>
-          <p className="text-sm text-muted-foreground">{candidate.party}</p>
+          <p className="text-sm text-muted-foreground">{info.party}</p>
         </div>
       </div>
 
@@ -51,17 +46,17 @@ export default function CandidateCard({
         </div>
 
         <button
-          onClick={() => onVote(candidate.id)}
-          disabled={!walletConnected || hasVoted || voting}
+          onClick={() => castVote(id)}
+          disabled={!isConnected}
           className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            walletConnected && !hasVoted && !voting
+            isConnected
               ? "bg-primary text-primary-foreground hover:bg-accent"
               : "bg-muted text-muted-foreground cursor-not-allowed"
           }`}
         >
-          {voting ? "Voting..." : hasVoted ? "Voted" : "Vote"}
+          Vote
         </button>
       </div>
     </div>
-  )
+  );
 }

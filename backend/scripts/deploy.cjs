@@ -4,15 +4,19 @@ const hre = require("hardhat");
 async function main() {
   const electionName = "Lok Sabha Election 2024";
   const candidates = [
-    "Narendra Modi",
-    "Rahul Gandhi",
-    "Arvind Kejriwal",
-    "Mamata Banerjee",
-    "Nitish Kumar",
+    { name: "Rajesh Kumar", party: "Bharatiya Janata Party", logoUrl: "bjp-logo.png" },
+    { name: "Priya Sharma", party: "Indian National Congress", logoUrl: "indian-national-congress-logo.png" },
+    { name: "Amit Singh", party: "Aam Aadmi Party", logoUrl: "aap-party-logo.png" },
+    { name: "Sunita Devi", party: "Independent", logoUrl: "independent-candidate-symbol.png" },
   ];
 
   const BharatVote = await hre.ethers.getContractFactory("BharatVote");
-  const contract = await BharatVote.deploy(electionName, candidates);
+  const contract = await BharatVote.deploy(
+    electionName,
+    candidates.map((c) => c.name),
+    candidates.map((c) => c.party),
+    candidates.map((c) => c.logoUrl)
+  );
 
   await contract.waitForDeployment();
 

@@ -1,5 +1,5 @@
 import { readContract, writeContract } from '@wagmi/core';
-import { config } from './config';
+import { wagmiConfig } from './config';
 
 // Contract configuration
 export const CONTRACT_ADDRESS = '0x9cA5179B5f5023e09E6646584A3b029CE284a455';
@@ -7,7 +7,9 @@ export const CONTRACT_ABI = [
   {
     "inputs": [
       { "internalType": "string", "name": "_electionName", "type": "string" },
-      { "internalType": "string[]", "name": "_candidateNames", "type": "string[]" }
+      { "internalType": "string[]", "name": "_candidateNames", "type": "string[]" },
+      { "internalType": "string[]", "name": "_candidateParties", "type": "string[]" },
+      { "internalType": "string[]", "name": "_candidateLogoUrls", "type": "string[]" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -17,6 +19,8 @@ export const CONTRACT_ABI = [
     "name": "candidates",
     "outputs": [
       { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "party", "type": "string" },
+      { "internalType": "string", "name": "logoUrl", "type": "string" },
       { "internalType": "uint256", "name": "voteCount", "type": "uint256" }
     ],
     "stateMutability": "view",
@@ -36,6 +40,8 @@ export const CONTRACT_ABI = [
       {
         "components": [
           { "internalType": "string", "name": "name", "type": "string" },
+          { "internalType": "string", "name": "party", "type": "string" },
+          { "internalType": "string", "name": "logoUrl", "type": "string" },
           { "internalType": "uint256", "name": "voteCount", "type": "uint256" }
         ],
         "internalType": "struct BharatVote.Candidate[]",
@@ -65,13 +71,15 @@ export const CONTRACT_ABI = [
 // Type definitions
 export interface Candidate {
   name: string;
+  party: string;
+  logoUrl: string;
   voteCount: number;
 }
 
 // Contract interaction functions
 export async function getCandidates(): Promise<Candidate[]> {
   try {
-    const candidates = await readContract(config, {
+    const candidates = await readContract(wagmiConfig, {
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'getAllCandidates',
@@ -79,6 +87,8 @@ export async function getCandidates(): Promise<Candidate[]> {
     
     return (candidates as any[]).map((candidate: any) => ({
       name: candidate.name,
+      party: candidate.party,
+      logoUrl: candidate.logoUrl,
       voteCount: Number(candidate.voteCount)
     }));
   } catch (error) {
@@ -89,7 +99,7 @@ export async function getCandidates(): Promise<Candidate[]> {
 
 export async function voteForCandidate(candidateIndex: number, signer: any): Promise<string> {
   try {
-    const hash = await writeContract(config, {
+    const hash = await writeContract(wagmiConfig, {
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'vote',
@@ -104,7 +114,7 @@ export async function voteForCandidate(candidateIndex: number, signer: any): Pro
 
 export async function checkIfVoted(address: string, provider: any): Promise<boolean> {
   try {
-    const hasVoted = await readContract(config, {
+    const hasVoted = await readContract(wagmiConfig, {
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'voters',
@@ -119,7 +129,7 @@ export async function checkIfVoted(address: string, provider: any): Promise<bool
 
 export async function getElectionName(): Promise<string> {
   try {
-    const electionName = await readContract(config, {
+    const electionName = await readContract(wagmiConfig, {
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'electionName',

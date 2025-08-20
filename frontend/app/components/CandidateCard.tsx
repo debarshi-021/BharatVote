@@ -29,10 +29,16 @@ export default function CandidateCard({
   return (
     <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border border-border">
       <div className="flex items-center mb-4">
+        <img
+          src={`/${candidate.logoUrl}`}
+          alt={`${candidate.name} logo`}
+          className="w-12 h-12 mr-4"
+        />
         <div className="flex-1">
           <h3 className="text-xl font-semibold text-card-foreground">
             {candidate.name}
           </h3>
+          <p className="text-sm text-muted-foreground">{candidate.party}</p>
         </div>
       </div>
 

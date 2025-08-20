@@ -14,6 +14,8 @@ contract BharatVote {
     // A structure to represent a candidate.
     struct Candidate {
         string name;
+        string party;
+        string logoUrl;
         uint256 voteCount;
     }
 
@@ -30,12 +32,19 @@ contract BharatVote {
      * @param _electionName The name of the election.
      * @param _candidateNames An array of strings representing the names of the candidates.
      */
-    constructor(string memory _electionName, string[] memory _candidateNames) {
+    constructor(
+        string memory _electionName,
+        string[] memory _candidateNames,
+        string[] memory _candidateParties,
+        string[] memory _candidateLogoUrls
+    ) {
         electionName = _electionName;
         // Loop through the provided candidate names and add them to the candidates array.
         for (uint256 i = 0; i < _candidateNames.length; i++) {
             candidates.push(Candidate({
                 name: _candidateNames[i],
+                party: _candidateParties[i],
+                logoUrl: _candidateLogoUrls[i],
                 voteCount: 0
             }));
         }

@@ -1,9 +1,24 @@
-import { createConfig, http } from '@wagmi/core'
-import { polygonAmoy } from '@wagmi/core/chains'
+import { configureChains, createConfig } from 'wagmi';
+import { polygonAmoy } from 'wagmi/chains';
+import { publicProvider } from 'wagmi/providers/public';
+import { getDefaultWallets } from '@rainbow-me/rainbowkit';
 
-export const config = createConfig({
-  chains: [polygonAmoy],
-  transports: {
-    [polygonAmoy.id]: http(),
-  },
-})
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [polygonAmoy],
+  [publicProvider()]
+);
+
+const { connectors } = getDefaultWallets({
+  appName: 'BharatVote',
+  projectId: '2c0dca4142539a3083baf970fa503a92',
+  chains,
+});
+
+export const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors,
+  publicClient,
+  webSocketPublicClient,
+});
+
+export { chains };

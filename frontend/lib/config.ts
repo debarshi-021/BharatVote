@@ -1,14 +1,18 @@
 import { http, createConfig } from 'wagmi';
-import { polygonAmoy } from 'wagmi/chains';
+import { polygonMumbai } from 'wagmi/chains';
 import { injected } from 'wagmi/connectors';
+import BharatVoteABI from '../../contracts/BharatVote.json';
 
 export const config = createConfig({
-  chains: [polygonAmoy],
+  chains: [polygonMumbai],
   connectors: [injected()],
   ssr: true,
   transports: {
-    [polygonAmoy.id]: http(),
+    [polygonMumbai.id]: http(),
   },
 });
 
-export const contractAddress = '0x9cA5179B5f5023e09E6646584A3b029CE284a455';
+export const contractConfig = {
+  address: '0x9cA5179B5f5023e09E6646584A3b029CE284a455',
+  abi: BharatVoteABI.abi,
+} as const;

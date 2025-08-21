@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect } from 'react';
 import { useBharatVote } from '@/hooks/useBharatVote';
 import CandidateCard from "./CandidateCard";
 import { Candidate } from '@/lib/types';
 
 export default function CandidateList() {
-  const { candidates } = useBharatVote();
+  const { candidates, isConfirmed, refetchCandidates } = useBharatVote();
+
+  useEffect(() => {
+    if (isConfirmed) {
+      refetchCandidates();
+    }
+  }, [isConfirmed, refetchCandidates]);
 
   if (!candidates) {
     return <div>Loading candidates...</div>;

@@ -5,8 +5,11 @@ import WalletConnect from "./components/WalletConnect";
 import CandidateList from "./components/CandidateList";
 import AdminPanel from "./components/AdminPanel";
 import Footer from "./components/Footer";
+import { useBharatVote } from "@/hooks/useBharatVote";
 
 export default function BharatVote() {
+  const { admin, userAddress } = useBharatVote();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -16,9 +19,11 @@ export default function BharatVote() {
           <WalletConnect />
         </div>
 
-        <div className="mb-8">
-          <AdminPanel />
-        </div>
+        {admin === userAddress && (
+          <div className="mb-8">
+            <AdminPanel />
+          </div>
+        )}
 
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-center mb-8 text-foreground">

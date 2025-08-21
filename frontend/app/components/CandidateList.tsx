@@ -1,32 +1,31 @@
-"use client";
+/**
+ * CandidateList Component
+ * Renders a responsive grid of candidate cards
+ */
 
-import { useEffect } from 'react';
-import { useBharatVote } from '@/hooks/useBharatVote';
-import CandidateCard from "./CandidateCard";
-import { Candidate } from '@/lib/types';
+import CandidateCard from "./CandidateCard"
 
-export default function CandidateList() {
-  const { candidates, isConfirmed, refetchCandidates } = useBharatVote();
+interface Candidate {
+  id: number
+  name: string
+  party: string
+  partyLogo: string
+  votes: number
+  manifesto: string
+}
 
-  useEffect(() => {
-    if (isConfirmed) {
-      refetchCandidates();
-    }
-  }, [isConfirmed, refetchCandidates]);
+interface CandidateListProps {
+  candidates: Candidate[]
+  onVote: (candidateId: number) => void
+  walletConnected: boolean
+}
 
-  if (!candidates) {
-    return <div>Loading candidates...</div>;
-  }
-
+export default function CandidateList({ candidates, onVote, walletConnected }: CandidateListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {candidates.map((candidate: Candidate, index: number) => (
-        <CandidateCard
-          key={index}
-          candidate={candidate}
-          id={index}
-        />
+      {candidates.map((candidate) => (
+        <CandidateCard key={candidate.id} candidate={candidate} onVote={onVote} walletConnected={walletConnected} />
       ))}
     </div>
-  );
+  )
 }

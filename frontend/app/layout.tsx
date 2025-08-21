@@ -1,34 +1,22 @@
-import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
-import './globals.css'
-import { Providers } from './providers'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
-}
+import './globals.css';
+import type { ReactNode } from 'react';
+import { WagmiProvider } from 'wagmi';
+import { wagmiConfig } from '../lib/wagmi';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/query';
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <style>{`
-html {
-  font-family: ${GeistSans.style.fontFamily};
-  --font-sans: ${GeistSans.variable};
-  --font-mono: ${GeistMono.variable};
-}
-        `}</style>
-      </head>
       <body>
-        <Providers>{children}</Providers>
+        <WagmiProvider config={wagmiConfig}>
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+        </WagmiProvider>
       </body>
     </html>
-  )
+  );
 }

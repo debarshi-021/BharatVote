@@ -36,7 +36,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-border mt-8 pt-6 text-center">
-          <p className="text-sm">© 2024 BharatVote. All rights reserved. | Powered by Blockchain Technology</p>
+          <p className="text-sm">© 2025 BharatVote. All rights reserved. | Powered by Blockchain Technology</p>
         </div>
       </div>
     </footer>

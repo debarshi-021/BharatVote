@@ -1,48 +1,60 @@
-"use client";
+"use client"
 
-import { useBharatVote } from '@/hooks/useBharatVote';
-import { Candidate } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+/**
+ * CandidateCard Component
+ * Displays individual candidate information with voting functionality
+ */
 
-interface CandidateCardProps {
-  candidate: Candidate;
-  id: number;
+interface Candidate {
+  id: number
+  name: string
+  party: string
+  partyLogo: string
+  votes: number
+  manifesto: string
 }
 
-export default function CandidateCard({ candidate, id }: CandidateCardProps) {
-  const { castVote, isConnected, isConfirming } = useBharatVote();
+interface CandidateCardProps {
+  candidate: Candidate
+  onVote: (candidateId: number) => void
+  walletConnected: boolean
+}
 
+export default function CandidateCard({ candidate, onVote, walletConnected }: CandidateCardProps) {
   return (
     <div className="bg-card rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border border-border">
       <div className="flex items-center mb-4">
         <img
-          src={candidate.logoUrl}
-          alt={`${candidate.name} logo`}
-          className="w-12 h-12 mr-4"
+          src={candidate.partyLogo || "/placeholder.svg"}
+          alt={`${candidate.party} logo`}
+          className="w-16 h-16 rounded-full mr-4 object-cover"
         />
         <div className="flex-1">
-          <h3 className="text-xl font-semibold text-card-foreground">
-            {candidate.name}
-          </h3>
-          <p className="text-sm text-muted-foreground">{candidate.party}</p>
+          <h3 className="text-xl font-semibold text-card-foreground">{candidate.name}</h3>
+          <p className="text-muted-foreground">{candidate.party}</p>
         </div>
       </div>
+
+      <p className="text-foreground mb-4 text-sm leading-relaxed">{candidate.manifesto}</p>
 
       <div className="flex items-center justify-between">
         <div className="text-center">
-          <p className="text-2xl font-bold text-primary">
-            {candidate.voteCount.toString()}
-          </p>
+          <p className="text-2xl font-bold text-primary">{candidate.votes}</p>
           <p className="text-sm text-muted-foreground">Votes</p>
         </div>
 
-        <Button
-          onClick={() => castVote(id)}
-          disabled={!isConnected || isConfirming}
+        <button
+          onClick={() => onVote(candidate.id)}
+          disabled={!walletConnected}
+          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            walletConnected
+              ? "bg-primary text-primary-foreground hover:bg-accent"
+              : "bg-muted text-muted-foreground cursor-not-allowed"
+          }`}
         >
-          {isConfirming ? 'Voting...' : 'Vote'}
-        </Button>
+          Vote
+        </button>
       </div>
     </div>
-  );
+  )
 }

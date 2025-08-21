@@ -1,181 +1,144 @@
-// hooks/useBharatVote.ts
-'use client';
+// frontend/hooks/useBharatVote.ts
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { readContract, writeContract, getAccount, connect, disconnect, switchChain } from 'wagmi/actions';
-import { injected } from 'wagmi/connectors';
-import { wagmiConfig } from '../lib/wagmi';
-import { polygonAmoy } from 'wagmi/chains';
-import { BHARATVOTE_ADDRESS, BHARATVOTE_ABI, MAX_CANDIDATES } from '../app/contracts/bharatVote';
+import { useEffect, useMemo, useState } from "react";
+import {
+  useAccount,
+  usePublicClient,
+  useWriteContract,
+  useWatchContractEvent,
+} from "wagmi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { polygonAmoy } from "viem/chains";
+import { BHARATVOTE_ABI, BHARATVOTE_ADDRESS } from "../lib/contract";
 
-export type UICandidate = {
-  id: number;
-  name: string;
-  party: string;
-  partyLogo: string;
-  votes: number;
-  manifesto: string;
-};
-
-async function ensureAmoy() {
-  try {
-    await switchChain(wagmiConfig, { chainId: polygonAmoy.id });
-  } catch { /* ignore if already on Amoy */ }
-}
-
-async function readOne(index: number): Promise<UICandidate | null> {
-  // Try a consolidated getter first: getCandidate(uint256) -> (name, party, logoUrl, votes, manifesto)
-  try {
-    const tup = await readContract(wagmiConfig, {
-      address: BHARATVOTE_ADDRESS,
-      abi: BHARATVOTE_ABI,
-      functionName: 'getCandidate',
-      args: [BigInt(index)],
-    }) as any[];
-
-    if (Array.isArray(tup) && tup.length >= 4) {
-      const [name, party, logo, votes, manifesto] = tup;
-      return {
-        id: index,
-        name: String(name),
-        party: String(party ?? ''),
-        partyLogo: String(logo ?? ''),
-        votes: Number(votes ?? 0),
-        manifesto: String(manifesto ?? ''),
-      };
-    }
-  } catch {}
-
-  // Try public array: candidates(uint256) -> (name, votes) plus parallel arrays for meta
-  try {
-    const cand = await readContract(wagmiConfig, {
-      address: BHARATVOTE_ADDRESS,
-      abi: BHARATVOTE_ABI,
-      functionName: 'candidates',
-      args: [BigInt(index)],
-    }) as any[];
-
-    if (Array.isArray(cand) && cand.length >= 2) {
-      const [name, votes] = cand;
-
-      // optional parallel getters
-      let party = '', logo = '', manifesto = '';
-      try {
-        party = String(await readContract(wagmiConfig, {
-          address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI,
-          functionName: 'parties', args: [BigInt(index)],
-        }) as any);
-      } catch {}
-      try {
-        logo = String(await readContract(wagmiConfig, {
-          address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI,
-          functionName: 'logoUrls', args: [BigInt(index)],
-        }) as any);
-      } catch {}
-      try {
-        manifesto = String(await readContract(wagmiConfig, {
-          address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI,
-          functionName: 'manifestos', args: [BigInt(index)],
-        }) as any);
-      } catch {}
-
-      return {
-        id: index,
-        name: String(name),
-        party,
-        partyLogo: logo,
-        votes: Number(votes ?? 0),
-        manifesto,
-      };
-    }
-  } catch {}
-
-  // Try fully split storage: candidateNames / parties / logoUrls / votes
-  try {
-    const [name, party, logo, votes, manifesto] = await Promise.all([
-      readContract(wagmiConfig, { address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI, functionName: 'candidateNames', args: [BigInt(index)] }) as Promise<any>,
-      readContract(wagmiConfig, { address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI, functionName: 'parties',        args: [BigInt(index)] }) as Promise<any>,
-      readContract(wagmiConfig, { address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI, functionName: 'logoUrls',      args: [BigInt(index)] }) as Promise<any>,
-      readContract(wagmiConfig, { address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI, functionName: 'votes',         args: [BigInt(index)] }) as Promise<any>,
-      (async () => {
-        try {
-          return await readContract(wagmiConfig, { address: BHARATVOTE_ADDRESS, abi: BHARATVOTE_ABI, functionName: 'manifestos', args: [BigInt(index)] }) as any;
-        } catch { return ''; }
-      })(),
-    ]);
-
-    return {
-      id: index,
-      name: String(name ?? ''),
-      party: String(party ?? ''),
-      partyLogo: String(logo ?? ''),
-      votes: Number(votes ?? 0),
-      manifesto: String(manifesto ?? ''),
-    };
-  } catch {}
-
-  return null;
-}
+const toNum = (v: any) =>
+  typeof v === "bigint" ? Number(v) : Number.isFinite(Number(v)) ? Number(v) : 0;
 
 export function useBharatVote() {
-  const [candidates, setCandidates] = useState<UICandidate[]>([]);
-  const account = useMemo(() => getAccount(wagmiConfig), []);
-  const [connecting, setConnecting] = useState(false);
+  const { address, isConnected, chainId } = useAccount();
+  const publicClient = usePublicClient({ chainId: 80002 }) ?? usePublicClient();
+  const queryClient = useQueryClient();
+
   const [pendingTx, setPendingTx] = useState<string | null>(null);
 
-  const isConnected = !!account?.address;
-  const walletAddress = account?.address ?? '';
+  // ---------- READ: candidates (works for both ABI shapes) ----------
+  const { data: candidates = [], refetch } = useQuery({
+    queryKey: ["bharatvote", "candidates", BHARATVOTE_ADDRESS, chainId ?? 80002],
+    queryFn: async () => {
+      if (!publicClient) return [];
 
-  const connectWallet = useCallback(async () => {
-    setConnecting(true);
-    try {
-      await connect(wagmiConfig, { connector: injected() });
-      await ensureAmoy();
-    } finally {
-      setConnecting(false);
-    }
-  }, []);
-
-  const load = useCallback(async () => {
-    const list: UICandidate[] = [];
-    for (let i = 0; i < MAX_CANDIDATES; i++) {
-      const cand = await readOne(i);
-      if (!cand) {
-        // stop at first gap to avoid unnecessary calls
-        if (i === 0) throw new Error('No candidates found on-chain. Check ABI/address.');
-        break;
+      // Try shape A: getCandidates() -> arrays
+      try {
+        const res: any = await publicClient.readContract({
+          abi: BHARATVOTE_ABI,
+          address: BHARATVOTE_ADDRESS as `0x${string}`,
+          functionName: "getCandidates",
+        });
+        const [names, parties, logos, votes] = res as [
+          string[],
+          string[],
+          string[],
+          bigint[]
+        ];
+        return (names || []).map((name, i) => ({
+          id: i,
+          name,
+          party: parties?.[i] ?? "",
+          partyLogo: logos?.[i] ?? "",
+          votes: toNum(votes?.[i]),
+          manifesto: "",
+        }));
+      } catch {
+        // fall through to shape B
       }
-      list.push(cand);
-    }
-    setCandidates(list);
-  }, []);
 
-  const vote = useCallback(async (candidateId: number) => {
-    await ensureAmoy();
-    const txHash = await writeContract(wagmiConfig, {
-      address: BHARATVOTE_ADDRESS,
+      // Shape B: getCandidateCount() + candidates(i)
+      let count = 0;
+      try {
+        const c: any = await publicClient.readContract({
+          abi: BHARATVOTE_ABI,
+          address: BHARATVOTE_ADDRESS as `0x${string}`,
+          functionName: "getCandidateCount",
+        });
+        count = toNum(c);
+      } catch {
+        count = 4; // fallback to 4 if no counter
+      }
+
+      const arr: Array<any> = [];
+      for (let i = 0; i < count; i++) {
+        try {
+          const cand: any = await publicClient.readContract({
+            abi: BHARATVOTE_ABI,
+            address: BHARATVOTE_ADDRESS as `0x${string}`,
+            functionName: "candidates",
+            args: [BigInt(i)],
+          });
+          const name = String(cand?.name ?? cand?.[0] ?? "");
+          const party = String(cand?.party ?? cand?.[1] ?? "");
+          const logo = String(cand?.logoUrl ?? cand?.[2] ?? "");
+          const votes = toNum(cand?.votes ?? cand?.[3] ?? 0n);
+          arr.push({ id: i, name, party, partyLogo: logo, votes, manifesto: "" });
+        } catch {
+          break;
+        }
+      }
+      return arr;
+    },
+    refetchInterval: 5000, // live-ish updates (others' votes)
+    staleTime: 0,
+  });
+
+  // ---------- WRITE: vote ----------
+  const { writeContractAsync } = useWriteContract();
+
+  async function vote(candidateIndex: number) {
+    if (!publicClient) throw new Error("No public client");
+    const hash = await writeContractAsync({
       abi: BHARATVOTE_ABI,
-      functionName: 'vote',
-      args: [BigInt(candidateId)],
-    }) as string;
-    setPendingTx(txHash);
-    // light polling after tx to reflect new total
-    setTimeout(load, 3500);
-    return txHash;
-  }, [load]);
+      address: BHARATVOTE_ADDRESS as `0x${string}`,
+      functionName: "vote",
+      args: [BigInt(candidateIndex)],
+      chainId: polygonAmoy.id,
+      account: address as `0x${string}` | undefined,
+    });
+    setPendingTx(hash);
 
-  useEffect(() => {
-    load().catch(console.error);
-    const t = setInterval(load, 5000); // keep UI fresh even without events
-    return () => clearInterval(t);
-  }, [load]);
+    // Wait for inclusion / success
+    await publicClient.waitForTransactionReceipt({ hash });
+    setPendingTx(null);
+
+    // Strong refresh: invalidate + refetch (twice to beat RPC lag)
+    await queryClient.invalidateQueries({
+      queryKey: ["bharatvote", "candidates"],
+    });
+    await refetch();
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["bharatvote", "candidates"] });
+      refetch();
+    }, 1200);
+
+    return hash;
+  }
+
+  // ---------- EVENTS: refresh on Voted(address,uint256) if present ----------
+  useWatchContractEvent({
+    abi: BHARATVOTE_ABI,
+    address: BHARATVOTE_ADDRESS as `0x${string}`,
+    eventName: "Voted",
+    chainId: 80002,
+    onLogs() {
+      queryClient.invalidateQueries({ queryKey: ["bharatvote", "candidates"] });
+      refetch();
+    },
+  });
 
   return {
     candidates,
-    isConnected,
-    walletAddress,
-    connectWallet,
-    connecting,
+    isConnected: !!isConnected && (chainId === 80002 || chainId === polygonAmoy.id),
+    walletAddress: address ?? "",
+    connectWallet: () => {}, // your WalletConnect button handles this
     vote,
     pendingTx,
   };

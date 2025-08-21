@@ -9,7 +9,9 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center">
-              <span className="text-accent-foreground font-bold text-xl">🗳️</span>
+              <span className="inline-block w-12 h-12">
+               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                 </span>
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">BharatVote</h1>

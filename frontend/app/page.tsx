@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import WalletConnect from "./components/WalletConnect";
 import CandidateList from "./components/CandidateList";
 import AdminPanel from "./components/AdminPanel";
 import Footer from "./components/Footer";
 
-// 🔌 on-chain integration
+// 🔌 on-chain integration (keep as-is per your setup)
 import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "../lib/wagmi";
 import { useBharatVote } from "../hooks/useBharatVote";
@@ -25,32 +25,42 @@ export default function BharatVote() {
     pendingTx,
   } = useBharatVote();
 
-  // helper to normalize logo path (serves from /public)
-const normalizeLogo = (s?: string) => {
-  const t = (s ?? "").trim();
-  if (!t) return "/placeholder.svg";
-  if (t.startsWith("http") || t.startsWith("/")) return t;
-  return `/${t}`;
-};
+  // ---------- helpers (DPs + numbers) ----------
+  // If you ever deploy with a basePath in next.config.mjs, set this env on Vercel:
+  // NEXT_PUBLIC_BASE_PATH=/your-base-path
+  const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").trim();
 
-// robust number coercion for bigint/undefined
-const toInt = (v: any) => {
-  if (typeof v === "bigint") return Number(v);
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
+  // robust logo normalizer for Vercel/Linux paths
+  const normalizeLogo = (s?: string) => {
+    let t = (s ?? "").trim();
+    if (!t) return `${basePath}/placeholder.svg`;
 
-  // adapt to your existing component prop shape
-const uiCandidates = candidates.map((c) => ({
-  id: c.id, // 0-based index (works with contract's vote(uint))
-  name: (c.name ?? "").toString(),
-  party: (c.party ?? "").toString(),
-  partyLogo: normalizeLogo(c.partyLogo),  // <- fix logos
-  votes: toInt(c.votes),                  // <- fix NaN
-  manifesto: (c.manifesto ?? "").toString(),
-}));
+    // If it is not absolute, normalize to your lowercase dash-style filenames in /public
+    if (!t.startsWith("http") && !t.startsWith("/")) {
+      t = t.replace(/\s+/g, "-").toLowerCase(); // "Indian National Congress.png" -> "indian-national-congress.png"
+      t = `/${t}`;
+    }
 
+    // Prefix basePath if provided
+    return basePath ? `${basePath}${t}` : t;
+  };
 
+  // robust number coercion for bigint/undefined
+  const toInt = (v: any) => {
+    if (typeof v === "bigint") return Number(v);
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // ---------- adapt on-chain to UI props ----------
+  const uiCandidates = candidates.map((c) => ({
+    id: c.id, // 0-based index (works with contract's vote(uint))
+    name: (c.name ?? "").toString(),
+    party: (c.party ?? "").toString(),
+    partyLogo: normalizeLogo(c.partyLogo), // ensures proper /public path on Vercel
+    votes: toInt(c.votes),                 // avoids NaN
+    manifesto: (c.manifesto ?? "").toString(),
+  }));
 
   const handleVote = async (candidateId: number) => {
     if (!isConnected) {
@@ -70,6 +80,12 @@ const uiCandidates = candidates.map((c) => ({
     alert("On-chain add is disabled in this deployment.");
   };
 
+  // Optional debug: uncomment to see resolved logo URLs and vote values
+  // useEffect(() => {
+  //   console.log("logos:", uiCandidates.map(c => c.partyLogo));
+  //   console.log("votes:", uiCandidates.map(c => c.votes));
+  // }, [uiCandidates]);
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <div className="min-h-screen bg-background">
@@ -86,7 +102,11 @@ const uiCandidates = candidates.map((c) => ({
             {pendingTx && (
               <p className="mt-2 text-sm">
                 Tx sent:{" "}
-                <a className="underline" target="_blank" href={`https://amoy.polygonscan.com/tx/${pendingTx}`}>
+                <a
+                  className="underline"
+                  target="_blank"
+                  href={`https://amoy.polygonscan.com/tx/${pendingTx}`}
+                >
                   {pendingTx}
                 </a>
               </p>

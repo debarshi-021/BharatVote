@@ -4,7 +4,7 @@ BharatVote is a blockchain-powered voting platform that allows anyone to cast th
 The goal of this project is to show how transparent, tamper-proof, and decentralized elections can look in the future.
 
 
-[Watch the demo on YouTube](https://youtu.be/FwII-n1rLLc)
+[Watch the demo on YouTube](https://www.youtube.com/watch?v=FwIl-nlrLLc)
 
 ##  Vision
 

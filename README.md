@@ -1,7 +1,11 @@
 # BharatVote – Decentralized Voting on Blockchain
 
+[Watch the demo on YouTube](https://youtu.be/FwII-n1rLLc)
+
+
 BharatVote is a blockchain-powered voting platform that allows anyone to cast their vote securely on the Polygon Amoy testnet.  
 The goal of this project is to show how transparent, tamper-proof, and decentralized elections can look in the future.
+
 
 ##  Vision
 
